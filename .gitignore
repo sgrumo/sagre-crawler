@@ -1,0 +1,10 @@
+# This file tells Git which files shouldn't be added to source control
+
+.idea
+dist
+node_modules
+storage
+
+# Environment variables (contains API keys and secrets)
+.env
+.env.local
