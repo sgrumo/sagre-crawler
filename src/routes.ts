@@ -119,14 +119,14 @@ router.addHandler("festival-detail", async ({ request, $, log, pushData }) => {
     .get()
     .filter((text) => text.length > 0);
 
-  festivalData.location = $(
-    // '.location, .dove, .locality, [class*="location"], [class*="dove"]'
-    ".map-marker, .fa-map-marker"
-  )
-    .parent()
-    .map((_, el) => $(el).text().trim())
-    .get()
-    .filter((text) => text.length > 0);
+  const recapiti = $("#recapiti");
+
+  festivalData.location = recapiti
+    .find("span:has(.fa-map-marker)")
+    .text()
+    .trim();
+
+  console.log("Location extracted:", festivalData.location);
 
   festivalData.province = $('.province, .provincia, [class*="province"]')
     .first()
@@ -217,7 +217,6 @@ router.addHandler("festival-detail", async ({ request, $, log, pushData }) => {
   log.info(`✓ Successfully scraped: ${title}`);
   await pushData(validatedData);
 
-  // Upload to Strapi if enabled
   if (ENABLE_STRAPI_UPLOAD) {
     if (!STRAPI_URL || !GEOAPIFY_API_KEY) {
       log.warning(

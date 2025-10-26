@@ -28,32 +28,78 @@ interface StrapiPayload {
   };
 }
 
-/**
- * Geocode a location using Geoapify API
- */
+interface GeoapifyResponse<T> {
+  results: T[];
+}
+interface GeocodeResponse {
+  country_code: string;
+  country: string;
+  datasource: {
+    sourcename: string;
+    attribution: string;
+    license: string;
+    url: string;
+  };
+  street: string;
+  state: string;
+  state_code: string;
+  lon: number;
+  lat: number;
+  result_type: string;
+  postcode: string;
+  city: string;
+  formatted: string;
+  address_line1: string;
+  address_line2: string;
+  timezone: {
+    name: string;
+    name_alt: string;
+    offset_STD: string;
+    offset_STD_seconds: number;
+    offset_DST: string;
+    offset_DST_seconds: number;
+    abbreviation_STD: string;
+    abbreviation_DST: string;
+  };
+  plus_code: string;
+  iso3166_2: string;
+  rank: {
+    popularity: number;
+    confidence: number;
+    confidence_street_level: number;
+    match_type: string;
+  };
+  place_id: string;
+  bbox: {
+    lon1: number;
+    lat1: number;
+    lon2: number;
+    lat2: number;
+  };
+}
+
 export async function geocodeLocation(
   locationString: string,
   apiKey: string
 ): Promise<StrapiPosition | null> {
+  if (!locationString?.trim()) return null;
+
   try {
     const encodedLocation = encodeURIComponent(locationString);
-    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodedLocation}&apiKey=${apiKey}&limit=1`;
+    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodedLocation}&apiKey=${apiKey}&limit=1&lang=it&format=json`;
 
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`Geoapify API error: ${response.status}`);
-      return null;
-    }
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    const data = await response.json();
-    if (data.features && data.features.length > 0) {
-      const [lng, lat] = data.features[0].geometry.coordinates;
+    const data = (await response.json()) as GeoapifyResponse<GeocodeResponse>;
+    if (data.results[0]) {
+      const lat = data.results[0].lat;
+      const lng = data.results[0].lon;
       return { lat, lng };
     }
-
     return null;
   } catch (error) {
-    console.error("Error geocoding location:", error);
+    console.error(`Geocoding failed for "${locationString}":`, error);
     return null;
   }
 }
@@ -64,8 +110,11 @@ export async function geocodeLocation(
 export function extractCoordinates(
   festivalData: FestivalData
 ): StrapiPosition | null {
-  if (festivalData.location) {
-    const locationString = getLocationString(festivalData);
+  if (festivalData.location && typeof festivalData.location === "object") {
+    const loc = festivalData.location as any;
+    if (loc.geo?.latitude && loc.geo?.longitude) {
+      return { lat: loc.geo.latitude, lng: loc.geo.longitude };
+    }
   }
   return null;
 }
@@ -179,9 +228,8 @@ export async function transformToStrapiFormat(
     let position = extractCoordinates(festivalData);
 
     if (!position) {
-      const locationString = getLocationString(festivalData);
-      console.log(`Geocoding location: ${locationString}`);
-      position = await geocodeLocation(locationString, geoapifyApiKey);
+      console.log(`Geocoding location for: ${festivalData.location}`);
+      position = await geocodeLocation(festivalData.location, geoapifyApiKey);
 
       if (!position) {
         console.error(`Failed to geocode location for: ${festivalData.title}`);
