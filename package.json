@@ -18,6 +18,7 @@
     },
     "scripts": {
         "start": "npm run start:dev",
+        "prestart": "npm run cleanup",
         "start:prod": "node dist/main.js",
         "start:dev": "tsx src/main.ts",
         "build": "tsc",
