@@ -6,6 +6,7 @@ import { router } from "./routes.js";
 const startUrls = [
   "https://www.sagreinromagna.it",
   "https://www.sagreinemilia.it",
+  { url: "https://www.assosagre.it/calendario_sagre.php?id_regioni=5", label: "assosagre-list" }, // Emilia-Romagna region
 ];
 
 const crawler = new CheerioCrawler({

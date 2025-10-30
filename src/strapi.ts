@@ -306,6 +306,8 @@ export async function processFestivalForStrapi(
     config.geoapifyApiKey,
   );
 
+  console.log(payload);
+
   if (!payload) {
     console.error(`Failed to transform data for: ${festivalData.title}`);
     return false;

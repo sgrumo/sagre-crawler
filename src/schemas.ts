@@ -46,7 +46,7 @@ export const FestivalDataSchema = z.object({
   url: z.url(),
   title: z.string(),
   scrapedAt: z.iso.datetime(),
-  source: z.enum(["sagreinromagna.it", "sagreinemilia.it"]),
+  source: z.enum(["sagreinromagna.it", "sagreinemilia.it", "assosagre.it"]),
 
   // Structured data (if available)
   structuredData: StructuredDataSchema.optional(),
