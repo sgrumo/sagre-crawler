@@ -18,6 +18,11 @@ The crawler extracts comprehensive festival data including dates, locations, des
 - `npm run start:prod` - Run the compiled production build from `dist/main.js`
 - `npm test` - Tests are not yet implemented
 
+### Cleanup
+- `npm run cleanup` - Remove past festivals from Strapi (festivals with end dates before today)
+- `npm run cleanup:dry-run` - Preview what would be deleted without actually deleting
+- `npm run cleanup:schedule` - Run the cleanup job on a schedule (configured via `CLEANUP_CRON_SCHEDULE`)
+
 ### Docker
 - Build: `docker build -t sagre-crawler .`
 - Run: `docker run sagre-crawler`
@@ -37,6 +42,10 @@ Required environment variables for Strapi integration:
 - `STRAPI_URL` - Full URL to your Strapi API endpoint (e.g., `http://localhost:1337/api/festivals`)
 - `STRAPI_TOKEN` - (Optional) Bearer token for authenticated Strapi requests
 - `GEOAPIFY_API_KEY` - API key for geocoding festival locations (get free key at https://www.geoapify.com/)
+
+Optional environment variables for cleanup scheduler:
+- `CLEANUP_CRON_SCHEDULE` - Cron expression for cleanup schedule (default: `"0 0 * * *"` = daily at midnight)
+- `CLEANUP_RUN_ON_START` - Run cleanup immediately when scheduler starts (default: `"false"`)
 
 ## Architecture
 
@@ -122,6 +131,8 @@ Each scraped record includes a `source` field that identifies whether data came 
 - `src/routes.ts` - Route handlers and scraping logic
 - `src/schemas.ts` - Zod schemas for data validation
 - `src/strapi.ts` - Strapi integration utilities (geocoding, data transformation, uploads)
+- `src/cleanup.ts` - Cleanup script to remove past festivals from Strapi
+- `src/cleanup-scheduler.ts` - Scheduled cleanup job using node-cron
 - `storage/` - Runtime data storage (gitignored)
 - `dist/` - Compiled JavaScript output
 
@@ -152,6 +163,43 @@ Implementation is in `src/strapi.ts` with the following key functions:
 - `transformToStrapiFormat()` - Transforms scraped data to Strapi payload
 - `uploadToStrapi()` - Posts data to Strapi API
 - `processFestivalForStrapi()` - Main orchestration function
+
+### Cleanup System
+
+The crawler includes a cleanup system to automatically remove past festivals from Strapi:
+
+1. **Manual Cleanup** (`src/cleanup.ts`):
+   - Fetches all festivals from Strapi with pagination
+   - Identifies festivals with end dates before today
+   - Deletes past festivals from Strapi
+   - Includes dry-run mode for safety (`--dry-run` flag)
+   - Provides detailed logging and summary statistics
+
+2. **Scheduled Cleanup** (`src/cleanup-scheduler.ts`):
+   - Uses node-cron for automatic scheduled execution
+   - Configurable schedule via `CLEANUP_CRON_SCHEDULE` environment variable
+   - Optional immediate run on start via `CLEANUP_RUN_ON_START`
+   - Default schedule: daily at midnight (`"0 0 * * *"`)
+   - Keeps process running and logs each cleanup run
+
+Usage examples:
+```bash
+# One-time cleanup (preview only)
+npm run cleanup:dry-run
+
+# One-time cleanup (actual deletion)
+npm run cleanup
+
+# Run scheduled cleanup (keeps running)
+npm run cleanup:schedule
+```
+
+Implementation details:
+- Respects festivals without dates (keeps them)
+- Uses festival endDate for determination, falls back to startDate if no endDate
+- Handles pagination to process all festivals
+- Includes error handling for individual deletion failures
+- Non-blocking: continues even if some deletions fail
 
 ### URL Patterns
 The crawler targets specific URL patterns:

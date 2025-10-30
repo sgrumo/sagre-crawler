@@ -80,7 +80,7 @@ interface GeocodeResponse {
 
 export async function geocodeLocation(
   locationString: string,
-  apiKey: string
+  apiKey: string,
 ): Promise<StrapiPosition | null> {
   if (!locationString?.trim()) return null;
 
@@ -108,7 +108,7 @@ export async function geocodeLocation(
  * Extract coordinates from structured data or location object
  */
 export function extractCoordinates(
-  festivalData: FestivalData
+  festivalData: FestivalData,
 ): StrapiPosition | null {
   if (festivalData.location && typeof festivalData.location === "object") {
     const loc = festivalData.location as any;
@@ -135,21 +135,18 @@ function generateSlug(title: string): string {
  * Convert plain text to Strapi rich text format
  */
 function createRichTextDescription(
-  festivalData: FestivalData
+  festivalData: FestivalData,
 ): StrapiDescription {
-  // Use description from structured data, or meta description, or first paragraph
   let textContent =
     festivalData.description ||
     festivalData.metaDescription ||
     festivalData.paragraphs[0] ||
     "Nessuna descrizione disponibile";
 
-  // If we have multiple paragraphs, join them
   if (festivalData.paragraphs && festivalData.paragraphs.length > 0) {
     textContent = festivalData.paragraphs.join("\n\n");
   }
 
-  // Split by double newlines to create separate paragraphs
   const paragraphs = textContent
     .split(/\n\n+/)
     .filter((p) => p.trim().length > 0);
@@ -221,7 +218,7 @@ export function getLocationString(festivalData: FestivalData): string {
  */
 export async function transformToStrapiFormat(
   festivalData: FestivalData,
-  geoapifyApiKey: string
+  geoapifyApiKey: string,
 ): Promise<StrapiPayload | null> {
   try {
     // Extract or geocode coordinates
@@ -262,7 +259,7 @@ export async function transformToStrapiFormat(
 export async function uploadToStrapi(
   payload: StrapiPayload,
   strapiUrl: string,
-  strapiToken?: string
+  strapiToken?: string,
 ): Promise<boolean> {
   try {
     const headers: HeadersInit = {
@@ -302,11 +299,11 @@ export async function processFestivalForStrapi(
     strapiUrl: string;
     strapiToken?: string;
     geoapifyApiKey: string;
-  }
+  },
 ): Promise<boolean> {
   const payload = await transformToStrapiFormat(
     festivalData,
-    config.geoapifyApiKey
+    config.geoapifyApiKey,
   );
 
   if (!payload) {
