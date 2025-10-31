@@ -1,5 +1,5 @@
 // strapi.ts
-import { FestivalData } from "./schemas.js";
+import { FestivalData } from "./utils/models/festival.js";
 
 interface StrapiPosition {
   lat: number;

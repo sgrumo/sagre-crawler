@@ -1,6 +1,4 @@
-// utils.ts - DEPRECATED: Use imports from utils/ folder instead
-// This file is kept for backward compatibility only
-import { FestivalData } from "./utils/models/festival.js";
+import { FestivalData } from "./models/festival.js";
 
 // Store for tracking seen festivals to avoid duplicates
 const seenFestivals = new Set<string>();
