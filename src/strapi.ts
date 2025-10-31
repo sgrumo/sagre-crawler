@@ -7,13 +7,10 @@ interface StrapiPosition {
 }
 
 interface StrapiDescription {
-  type: "doc";
-  content: Array<{
-    type: "paragraph";
-    content: Array<{
-      type: "text";
-      text: string;
-    }>;
+  type: "paragraph";
+  children: Array<{
+    type: "text";
+    text: string;
   }>;
 }
 
@@ -22,7 +19,7 @@ interface StrapiPayload {
     title: string;
     startDate?: string;
     endDate?: string;
-    description: StrapiDescription;
+    description: StrapiDescription[];
     slug: string;
     position: StrapiPosition;
   };
@@ -136,33 +133,34 @@ function generateSlug(title: string): string {
  */
 function createRichTextDescription(
   festivalData: FestivalData,
-): StrapiDescription {
+): StrapiDescription[] {
   let textContent =
     festivalData.description ||
     festivalData.metaDescription ||
-    festivalData.paragraphs[0] ||
+    festivalData.paragraphs?.[0] ||
     "Nessuna descrizione disponibile";
 
   if (festivalData.paragraphs && festivalData.paragraphs.length > 0) {
     textContent = festivalData.paragraphs.join("\n\n");
   }
 
+  // Replace \r\n with \n for consistent splitting
+  textContent = textContent.replace(/\r\n/g, "\n");
+
+  // Split by newlines to create paragraphs
   const paragraphs = textContent
     .split(/\n\n+/)
     .filter((p) => p.trim().length > 0);
 
-  return {
-    type: "doc",
-    content: paragraphs.map((paragraph) => ({
-      type: "paragraph",
-      content: [
-        {
-          type: "text",
-          text: paragraph.trim(),
-        },
-      ],
-    })),
-  };
+  return paragraphs.map((paragraph) => ({
+    type: "paragraph",
+    children: [
+      {
+        type: "text",
+        text: paragraph.trim(),
+      },
+    ],
+  }));
 }
 
 /**
@@ -305,8 +303,6 @@ export async function processFestivalForStrapi(
     festivalData,
     config.geoapifyApiKey,
   );
-
-  console.log(payload);
 
   if (!payload) {
     console.error(`Failed to transform data for: ${festivalData.title}`);

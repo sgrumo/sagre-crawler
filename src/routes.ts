@@ -158,8 +158,6 @@ router.addHandler("festival-detail", async ({ request, $, log, pushData }) => {
     .text()
     .trim();
 
-  console.log("Location extracted:", festivalData.location);
-
   festivalData.province = $('.province, .provincia, [class*="province"]')
     .first()
     .text()
@@ -313,8 +311,9 @@ router.addHandler("assosagre-detail", async ({ request, $, log, pushData }) => {
     const year = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
 
     // Find all Italian month names in the text
-    const monthRegex = /(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)/gi;
-    const months = [...sagradateText.matchAll(monthRegex)].map(m => m[0]);
+    const monthRegex =
+      /(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)/gi;
+    const months = [...sagradateText.matchAll(monthRegex)].map((m) => m[0]);
 
     // Extract all day numbers (e.g., "7-8-14-15" or "31" or "1-2")
     const dayNumbersRegex = /\b(\d{1,2})(?:\s*-\s*(\d{1,2}))*\b/g;
@@ -325,10 +324,12 @@ router.addHandler("assosagre-detail", async ({ request, $, log, pushData }) => {
       // Scenario 2: "7-8-14-15 Novembre 2025" (multiple dates in same month)
 
       const allDays: number[] = [];
-      dayMatches.forEach(match => {
+      dayMatches.forEach((match) => {
         // match[0] could be "7-8-14-15" or "31" or "1-2"
         const dayString = match[0];
-        const days = dayString.split(/\s*-\s*/).map(d => parseInt(d.trim(), 10));
+        const days = dayString
+          .split(/\s*-\s*/)
+          .map((d) => parseInt(d.trim(), 10));
         allDays.push(...days);
       });
 
@@ -359,17 +360,29 @@ router.addHandler("assosagre-detail", async ({ request, $, log, pushData }) => {
         const secondMonthIndex = sagradateText.indexOf(lastMonth);
 
         const beforeSecondMonth = sagradateText.substring(0, secondMonthIndex);
-        const daysBeforeSecondMonth = [...beforeSecondMonth.matchAll(/\b(\d{1,2})\b/g)].map(m => parseInt(m[0], 10));
+        const daysBeforeSecondMonth = [
+          ...beforeSecondMonth.matchAll(/\b(\d{1,2})\b/g),
+        ].map((m) => parseInt(m[0], 10));
 
-        const afterFirstMonth = sagradateText.substring(firstMonthIndex + firstMonth.length);
-        const daysAfterFirstMonth = [...afterFirstMonth.matchAll(/\b(\d{1,2})\b/g)].map(m => parseInt(m[0], 10));
+        const afterFirstMonth = sagradateText.substring(
+          firstMonthIndex + firstMonth.length,
+        );
+        const daysAfterFirstMonth = [
+          ...afterFirstMonth.matchAll(/\b(\d{1,2})\b/g),
+        ].map((m) => parseInt(m[0], 10));
 
         // First day with first month
-        const startDay = daysBeforeSecondMonth.length > 0 ? daysBeforeSecondMonth[0] : firstDay;
+        const startDay =
+          daysBeforeSecondMonth.length > 0
+            ? daysBeforeSecondMonth[0]
+            : firstDay;
         const startDate = parseItalianDate(`${startDay} ${firstMonth} ${year}`);
 
         // Last day with last month
-        const endDay = daysAfterFirstMonth.length > 0 ? Math.max(...daysAfterFirstMonth) : lastDay;
+        const endDay =
+          daysAfterFirstMonth.length > 0
+            ? Math.max(...daysAfterFirstMonth)
+            : lastDay;
         const endDate = parseItalianDate(`${endDay} ${lastMonth} ${year}`);
 
         if (startDate) {
@@ -533,7 +546,6 @@ router.addHandler("assosagre-detail", async ({ request, $, log, pushData }) => {
 
   log.info(`✓ Successfully scraped: ${title}`);
 
-  console.log("validated data", validatedData);
   await pushData(validatedData);
 
   // Upload to Strapi if enabled
@@ -544,6 +556,7 @@ router.addHandler("assosagre-detail", async ({ request, $, log, pushData }) => {
       );
     } else {
       log.info(`Uploading to Strapi: ${title}`);
+
       const uploadSuccess = await processFestivalForStrapi(validatedData.data, {
         strapiUrl: STRAPI_URL,
         strapiToken: STRAPI_TOKEN,
