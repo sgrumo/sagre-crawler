@@ -1,5 +1,5 @@
-import { Contacts } from "../models/festival.js";
 import { COMMON_SELECTORS, EXCLUDED_DOMAINS } from "../constants.js";
+import { Contacts } from "../models/festival.js";
 
 /**
  * Extract contact information from a page
@@ -15,7 +15,9 @@ export function extractContacts(
       .filter((phone: any): phone is string => Boolean(phone)),
 
     emails: $(COMMON_SELECTORS.CONTACT_SELECTORS.EMAILS)
-      .map((_: any, el: any) => $(el).attr("href")?.replace("mailto:", "").trim())
+      .map((_: any, el: any) =>
+        $(el).attr("href")?.replace("mailto:", "").trim()
+      )
       .get()
       .filter((email: any): email is string => Boolean(email)),
 
@@ -33,12 +35,16 @@ export function extractContacts(
 /**
  * Extract social media links from a page
  */
-export function extractSocialMedia(
-  $: any
-): { facebook: string | null; instagram: string | null; twitter: string | null } {
+export function extractSocialMedia($: any): {
+  facebook: string | null;
+  instagram: string | null;
+  twitter: string | null;
+} {
   return {
-    facebook: $(COMMON_SELECTORS.SOCIAL_SELECTORS.FACEBOOK).attr("href") || null,
-    instagram: $(COMMON_SELECTORS.SOCIAL_SELECTORS.INSTAGRAM).attr("href") || null,
+    facebook:
+      $(COMMON_SELECTORS.SOCIAL_SELECTORS.FACEBOOK).attr("href") || null,
+    instagram:
+      $(COMMON_SELECTORS.SOCIAL_SELECTORS.INSTAGRAM).attr("href") || null,
     twitter: $(COMMON_SELECTORS.SOCIAL_SELECTORS.TWITTER).attr("href") || null,
   };
 }

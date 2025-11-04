@@ -1,29 +1,22 @@
 import { createCheerioRouter } from "crawlee";
-import {
-  FestivalData,
-  FestivalDataSchema,
-} from "../../utils/models/festival.js";
 import { processFestivalForStrapi } from "../../strapi.js";
-import { isDuplicate, isFestivalPast, parseItalianDate } from "../../utils/helpers.js";
+import { REGEX_PATTERNS, WEBSITE_CONFIG } from "../../utils/constants.js";
 import {
-  extractContacts,
-  extractSocialMedia,
-} from "../../utils/mappers/contact-mapper.js";
+  isDuplicate,
+  isFestivalPast,
+  parseItalianDate,
+} from "../../utils/helpers.js";
 import {
-  extractTitle,
-  extractMetadata,
-  extractImages,
-  extractParagraphs,
   extractCategories,
-  extractSchedule,
-  extractPrices,
   extractFullText,
+  extractImages,
+  extractMetadata,
+  extractParagraphs,
+  extractPrices,
+  extractSchedule,
+  extractTitle,
 } from "../../utils/mappers/festival-mapper.js";
-import {
-  WEBSITE_CONFIG,
-  REGEX_PATTERNS,
-  EXCLUDED_DOMAINS,
-} from "../../utils/constants.js";
+import { FestivalDataSchema } from "../../utils/models/festival.js";
 
 export const assosasgreRouter = createCheerioRouter();
 
@@ -136,17 +129,15 @@ assosasgreRouter.addHandler(
     // Extract festival detail links
     const festivalLinks: string[] = [];
 
-    $(
-      'a[href*="' +
-        WEBSITE_CONFIG.ASSOSAGRE.URLS.FESTIVAL_DETAIL +
-        '"]'
-    ).each((_, el) => {
-      const href = $(el).attr("href");
-      if (href) {
-        const url = new URL(href, request.loadedUrl);
-        festivalLinks.push(url.toString());
+    $('a[href*="' + WEBSITE_CONFIG.ASSOSAGRE.URLS.FESTIVAL_DETAIL + '"]').each(
+      (_, el) => {
+        const href = $(el).attr("href");
+        if (href) {
+          const url = new URL(href, request.loadedUrl);
+          festivalLinks.push(url.toString());
+        }
       }
-    });
+    );
 
     log.info(
       `Found ${festivalLinks.length} festival links on assosagre list page`
@@ -168,13 +159,12 @@ assosasgreRouter.addHandler(
     log.info(`Scraping assosagre festival detail: ${request.loadedUrl}`);
 
     // Extract title
-    const customTitleSelector = WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.FESTIVAL_NAME;
+    const customTitleSelector =
+      WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.FESTIVAL_NAME;
     const title = extractTitle($, customTitleSelector);
 
     // Extract dates from .sagradate
-    const sagradateText = $(
-      WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.DATE_CONTAINER
-    )
+    const sagradateText = $(WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.DATE_CONTAINER)
       .text()
       .trim();
     const dates = sagradateText ? [sagradateText] : [];
@@ -203,54 +193,86 @@ assosasgreRouter.addHandler(
 
     // Extract location from .sagrainfo
     let location = "";
+    let locationCoordinates: { lat: number; lng: number } | null = null;
     const sagraInfo = $(WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.INFO_CONTAINER);
     if (sagraInfo.length > 0) {
-      const locationElements = sagraInfo.find(
-        WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.LOCATION_ICON
-      ).parent("a");
-      if (locationElements.length > 0) {
-        location = locationElements.first().text().trim();
+      const locationLink = sagraInfo
+        .find(WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.LOCATION_ICON)
+        .parent("a");
+      if (locationLink.length > 0) {
+        location = locationLink.first().text().trim();
+
+        // Extract coordinates from Google Maps href
+        const mapsHref = locationLink.first().attr("href");
+        if (mapsHref) {
+          const coordMatch = mapsHref.match(REGEX_PATTERNS.MAPS_COORDINATES);
+          if (coordMatch) {
+            locationCoordinates = {
+              lat: parseFloat(coordMatch[1]),
+              lng: parseFloat(coordMatch[2]),
+            };
+            log.info(
+              `Extracted coordinates from Google Maps link: ${coordMatch[1]}, ${coordMatch[2]}`
+            );
+          }
+        }
       }
     }
     festivalData.location = location;
 
+    // Store coordinates if extracted from location link
+    if (locationCoordinates) {
+      festivalData.structuredData = {
+        "@type": "Event",
+        name: title,
+        startDate: festivalData.startDate,
+        endDate: festivalData.endDate,
+        location: {
+          "@type": "Place",
+          name: location,
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: locationCoordinates.lat,
+            longitude: locationCoordinates.lng,
+          },
+        },
+      };
+    }
+
     // Extract province
-    const provinceMatch = $("body")
-      .text()
-      .match(REGEX_PATTERNS.PROVINCE_CODE);
+    const provinceMatch = $("body").text().match(REGEX_PATTERNS.PROVINCE_CODE);
     festivalData.province = provinceMatch ? provinceMatch[1] : "";
 
     // Extract contact information
-    Object.assign(
-      festivalData,
-      extractContacts($, EXCLUDED_DOMAINS.ASSOSAGRE)
-    );
+    // Object.assign(festivalData, extractContacts($, EXCLUDED_DOMAINS.ASSOSAGRE));
 
     // Extract social media
-    Object.assign(festivalData, extractSocialMedia($));
+    // Object.assign(festivalData, extractSocialMedia($));
 
-    // Extract coordinates from Google Maps
-    const mapsIframe = $(
-      WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.MAPS_IFRAME
-    ).attr("src");
-    if (mapsIframe) {
-      const coordMatch = mapsIframe.match(REGEX_PATTERNS.MAPS_COORDINATES);
-      if (coordMatch) {
-        festivalData.structuredData = {
-          "@type": "Event",
-          name: title,
-          startDate: festivalData.startDate,
-          endDate: festivalData.endDate,
-          location: {
-            "@type": "Place",
-            name: festivalData.location,
-            geo: {
-              "@type": "GeoCoordinates",
-              latitude: parseFloat(coordMatch[1]),
-              longitude: parseFloat(coordMatch[2]),
+    // Fallback: Extract coordinates from Google Maps iframe if not already extracted from location link
+    if (!locationCoordinates) {
+      const mapsIframe = $(WEBSITE_CONFIG.ASSOSAGRE.SELECTORS.MAPS_IFRAME).attr(
+        "src"
+      );
+      if (mapsIframe) {
+        const coordMatch = mapsIframe.match(REGEX_PATTERNS.MAPS_COORDINATES);
+        if (coordMatch) {
+          festivalData.structuredData = {
+            "@type": "Event",
+            name: title,
+            startDate: festivalData.startDate,
+            endDate: festivalData.endDate,
+            location: {
+              "@type": "Place",
+              name: festivalData.location,
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: parseFloat(coordMatch[1]),
+                longitude: parseFloat(coordMatch[2]),
+              },
             },
-          },
-        };
+          };
+        }
       }
     }
 
@@ -266,19 +288,19 @@ assosasgreRouter.addHandler(
 
     // Extract paragraphs
     festivalData.paragraphs = extractParagraphs($, ["p"], 20).filter(
-      (text) =>
-        !text.includes("Dove:") &&
-        !text.includes("Quando:")
+      (text) => !text.includes("Dove:") && !text.includes("Quando:")
     );
 
     festivalData.description = festivalData.paragraphs.join("\n\n");
 
     // Extract other fields
-    festivalData.categories = extractCategories($, [".category", ".tag", ".tipo"]);
+    festivalData.categories = extractCategories($, [
+      ".category",
+      ".tag",
+      ".tipo",
+    ]);
     festivalData.schedule = extractSchedule($, []);
-    const scheduleText = $(
-      "p:contains('Orari:'), p:contains('dalle')"
-    )
+    const scheduleText = $("p:contains('Orari:'), p:contains('dalle')")
       .text()
       .trim();
     if (scheduleText) {

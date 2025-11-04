@@ -222,14 +222,19 @@ export async function transformToStrapiFormat(
     // Extract or geocode coordinates
     let position = extractCoordinates(festivalData);
 
-    if (!position) {
+    // Only use geoapify as fallback if coordinates weren't extracted directly
+    if (!position && geoapifyApiKey && festivalData.location) {
       console.log(`Geocoding location for: ${festivalData.location}`);
       position = await geocodeLocation(festivalData.location, geoapifyApiKey);
 
       if (!position) {
-        console.error(`Failed to geocode location for: ${festivalData.title}`);
-        return null;
+        console.warn(`Failed to geocode location for: ${festivalData.title}`);
+        // For assosagre, missing coordinates is not critical if we already have structured data
+        // Continue without position for now
       }
+    } else if (!position) {
+      console.warn(`No coordinates found for: ${festivalData.title}`);
+      // Continue without position rather than failing completely
     }
 
     // Build the Strapi payload
@@ -240,7 +245,7 @@ export async function transformToStrapiFormat(
         endDate: parseDate(festivalData.endDate),
         description: createRichTextDescription(festivalData),
         slug: generateSlug(festivalData.title),
-        position,
+        position: position || { lat: 0, lng: 0 }, // Fallback to 0,0 if no position found
       },
     };
 

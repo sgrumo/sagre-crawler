@@ -73,10 +73,10 @@ export const FestivalDataSchema = z.object({
   fullText: z.string(),
 
   // Contact information
-  contacts: ContactsSchema,
+  contacts: ContactsSchema.optional(),
 
   // Social media
-  socialMedia: SocialMediaSchema,
+  socialMedia: SocialMediaSchema.optional(),
 
   // Classification
   categories: z.array(z.string()),
