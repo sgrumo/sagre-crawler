@@ -105,6 +105,26 @@ export const WEBSITE_CONFIG = {
       MAPS_IFRAME: 'iframe[src*="maps.google.com"]',
     },
   },
+  VIVIROMAGNA: {
+    URLS: {
+      FESTIVAL_LIST: "https://www.viviromagna.it/eventi-sagre",
+      FESTIVAL_DETAIL: "https://www.viviromagna.it/**",
+    },
+    SOURCE: "viviromagna.it",
+    SELECTORS: {
+      DATE_CONTAINER: '[data-date], .event-date, .data, .date, .quando',
+      LOCATION_CONTAINER: '[data-location], .event-location, .location, .venue',
+      TITLE: "h1, .event-title, .title",
+    },
+    PARAGRAPH_SELECTORS: [
+      "article p",
+      ".content p",
+      ".description p",
+      "main p",
+      "p",
+    ],
+    IMAGE_EXCLUDE_PATTERNS: ["logo", "icon", "favicon"],
+  },
 };
 
 /**
@@ -139,4 +159,5 @@ export const REGEX_PATTERNS = {
 export const EXCLUDED_DOMAINS = {
   ROMAGNA_EMILIA: ["sagreinromagna.it", "sagreinemilia.it"],
   ASSOSAGRE: ["assosagre.it", "facebook.com", "instagram.com"],
+  VIVIROMAGNA: ["viviromagna.it", "facebook.com", "instagram.com"],
 };
