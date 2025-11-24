@@ -38,12 +38,12 @@ mainRouter.addHandler(
 );
 
 const startUrls = [
-  //  "https://www.sagreinromagna.it",
-  //  "https://www.sagreinemilia.it",
-  //  {
-  //    url: "https://www.assosagre.it/calendario_sagre.php?id_regioni=5",
-  //    label: "assosagre-list",
-  //  }, // Emilia-Romagna region
+  "https://www.sagreinromagna.it",
+  "https://www.sagreinemilia.it",
+  {
+    url: "https://www.assosagre.it/calendario_sagre.php?id_regioni=5",
+    label: "assosagre-list",
+  },
   { url: "https://www.viviromagna.it/eventi-sagre", label: "viviromagna-list" }, // Viviromagna events
 ];
 
