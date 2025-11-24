@@ -4,17 +4,17 @@
   "type": "module",
   "description": "This is an example of a Crawlee project.",
   "dependencies": {
-    "crawlee": "^3.0.0",
+    "crawlee": "^3.15.3",
     "dotenv": "^17.2.3",
     "node-cron": "^3.0.3",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@apify/tsconfig": "^0.1.0",
-    "@types/node": "^22.0.0",
+    "@apify/tsconfig": "^0.1.1",
+    "@types/node": "^22.19.1",
     "@types/node-cron": "^3.0.11",
-    "tsx": "^4.4.0",
-    "typescript": "~5.9.0"
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3"
   },
   "scripts": {
     "start": "npm run start:dev",
